@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fuel Calc">
+<meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Fuel Uplift Calculator</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--line:#2a313c;--txt:#e6edf3;--mut:#8b949e;--acc:#58c4a0;--warn:#e3b341;--bad:#f0605a;--in:#0b0f14}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));max-width:560px;margin:auto}
+h1{font-size:19px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:12px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}
+input,select{width:100%;background:var(--in);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:17px}
+input:focus,select:focus{outline:2px solid var(--acc);border-color:transparent}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.seg{display:flex;background:var(--in);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;background:none;border:0;color:var(--mut);padding:9px 4px;border-radius:8px;font-size:14px;font-weight:600}
+.seg button.on{background:var(--acc);color:#04130d}
+.dens{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.dens div{background:var(--in);border-radius:8px;padding:8px 4px}
+.dens b{display:block;font-size:18px}
+.dens span{font-size:11px;color:var(--mut)}
+.big{font-size:34px;font-weight:700;color:var(--acc);line-height:1.1}
+.big small{font-size:16px;color:var(--mut);font-weight:500}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border:0}
+.kv span:first-child{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:500;font-size:12px}
+th:first-child,td:first-child{text-align:left}
+td.l{color:var(--acc);font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btns button,.btn{background:var(--in);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px}
+.btns button:active{background:var(--line)}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:8px}
+.msg.w{background:rgba(227,179,65,.12);color:var(--warn)}
+.msg.b{background:rgba(240,96,90,.12);color:var(--bad)}
+.msg.i{background:rgba(88,196,160,.1);color:var(--acc)}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.side div{background:var(--in);border-radius:10px;padding:10px;text-align:center}
+.side b{display:block;font-size:24px;color:var(--acc)}
+.side span{font-size:12px;color:var(--mut)}
+details summary{cursor:pointer;color:var(--mut);font-size:13px}
+.foot{font-size:11px;color:var(--mut);margin-top:6px}
+.hide{display:none}
+.work{margin-top:10px;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--txt);background:var(--in);border-radius:8px;padding:10px;overflow-x:auto}
+.work b{color:var(--acc)}
+.mut{color:var(--mut)}
+</style>
+</head>
+<body>
+<h1>Fuel Uplift Calculator</h1>
+<div class="sub">Densities from CFS A40 Fuel and Oil Weights (eff. 29 Oct 2026). Linear interpolation between table temperatures.</div>
+
+<div class="card">
+  <h2>Fuel and temperature</h2>
+  <div class="row">
+    <div><label>Fuel</label>
+      <select id="fuel">
+        <option value="jeta">Jet A / Jet A-1</option>
+        <option value="jetb">Jet B</option>
+        <option value="avgas">AvGas 100LL</option>
+      </select></div>
+    <div><label>Fuel temp (°C)</label>
+      <div style="display:flex;gap:6px"><button type="button" id="bNeg" class="btn" style="font-size:20px;font-weight:700;padding:0 14px">±</button><input id="temp" type="text" inputmode="decimal" autocomplete="off" value="15" style="min-width:0"></div></div>
+  </div>
+  <div class="row">
+    <div><label>CBA density override (lb/L, optional)</label><input id="ovr" type="number" inputmode="decimal" step="0.001" placeholder="e.g. 1.81"></div>
+    <div><label>Round litres up to</label>
+      <select id="rnd"><option value="1">1 L</option><option value="5">5 L</option><option value="10" selected>10 L</option><option value="50">50 L</option></select></div>
+  </div>
+  <div class="dens">
+    <div><b id="dL">–</b><span>lb / L</span></div>
+    <div><b id="dU">–</b><span>lb / US gal</span></div>
+    <div><b id="dI">–</b><span>lb / Imp gal</span></div>
+  </div>
+  <div id="denMsg"></div>
+</div>
+
+<div class="seg" id="tabs">
+  <button data-t="ka" class="on">King Air</button>
+  <button data-t="gen">General</button>
+</div>
+
+<!-- KING AIR -->
+<div id="t-ka">
+  <div class="card">
+    <h2>Current fuel on board (lb, from gauges)</h2>
+    <div class="row">
+      <div><label>Left main</label><input id="lm" type="number" inputmode="decimal" value="0"></div>
+      <div><label>Right main</label><input id="rm" type="number" inputmode="decimal" value="0"></div>
+    </div>
+    <div class="row" style="margin-bottom:0">
+      <div><label>Left aux</label><input id="la" type="number" inputmode="decimal" value="0"></div>
+      <div><label>Right aux</label><input id="ra" type="number" inputmode="decimal" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Required fuel</h2>
+    <label>Total fuel wanted on board (lb)</label>
+    <input id="ktgt" type="number" inputmode="decimal" placeholder="e.g. 2800">
+    <div class="btns">
+      <button id="bMains">Mains full</button>
+      <button id="bFull">Full fuel (mains + aux)</button>
+    </div>
+    <div class="foot">Fills mains first, split evenly L/R, then any remainder into the aux tanks evenly.</div>
+  </div>
+
+  <div class="card">
+    <h2>Tell the fueler</h2>
+    <div class="big" id="kTotL">–</div>
+    <div class="side">
+      <div><b id="kLeftL">–</b><span>Left wing (L)</span></div>
+      <div><b id="kRightL">–</b><span>Right wing (L)</span></div>
+    </div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Tank</th><th>Now lb</th><th>Target lb</th><th>Add lb</th><th>Add L</th></tr></thead>
+      <tbody id="kTable"></tbody>
+    </table>
+    <div id="kMsg"></div>
+  </div>
+
+  <div class="card">
+    <details open>
+      <summary>Show the math</summary>
+      <div class="work" id="kWork"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>Tank capacities (tap to edit)</summary>
+      <div style="margin-top:10px">
+        <label>Mains capacity, per side</label>
+        <div class="row"><input id="cMain" type="number" inputmode="decimal"><select id="cMainU"><option>lb</option><option>USG</option><option>L</option></select></div>
+        <label>Aux capacity, per side</label>
+        <div class="row"><input id="cAux" type="number" inputmode="decimal"><select id="cAuxU"><option>lb</option><option>USG</option><option>L</option></select></div>
+        <div class="kv"><span>Mains total</span><span id="capM">–</span></div>
+        <div class="kv"><span>Aux total</span><span id="capA">–</span></div>
+        <div class="kv"><span>Full fuel</span><span id="capF">–</span></div>
+        <div class="foot">Defaults: mains 1,225 lb per side (2,450 lb total), aux 79 USG per side (B200 figure). Check these against your aircraft's POH. A capacity entered in gallons or litres converts to lb at the current density; one entered in lb stays fixed.</div>
+        <div class="btns"><button id="bReset">Reset defaults</button></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- GENERAL -->
+<div id="t-gen" class="hide">
+  <div class="card">
+    <h2>Weight to volume</h2>
+    <div class="row">
+      <div><label>Fuel on board now (lb)</label><input id="gNow" type="number" inputmode="decimal" value="0"></div>
+      <div><label>Fuel wanted (lb)</label><input id="gTgt" type="number" inputmode="decimal" placeholder="e.g. 400"></div>
+    </div>
+    <div class="big" id="gL">–</div>
+    <div style="margin-top:8px">
+      <div class="kv"><span>Add weight</span><span id="gLb">–</span></div>
+      <div class="kv"><span>US gallons</span><span id="gU">–</span></div>
+      <div class="kv"><span>Imperial gallons</span><span id="gI">–</span></div>
+    </div>
+    <div id="gMsg"></div>
+    <details open style="margin-top:12px">
+      <summary>Show the math</summary>
+      <div class="work" id="gWork"></div>
+    </details>
+  </div>
+  <div class="card">
+    <h2>Volume to weight (check the receipt)</h2>
+    <div class="row" style="margin-bottom:0">
+      <div><label>Litres delivered</label><input id="rL" type="number" inputmode="decimal" placeholder="e.g. 500"></div>
+      <div><label>Weight added</label><div class="big" style="font-size:24px;padding-top:6px" id="rLb">–</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">CFS values are based on the maximum density limit for each product, so actual fuel is usually a bit lighter and the true weight per litre a bit lower. For exact numbers, enter the density from the dealer's certified batch analysis. Always confirm fuel quantity visually and against the gauges.</div>
+
+<script>
+const T=[-40,-20,0,15,30];
+const D={
+ jeta:{L:[1.93,1.90,1.87,1.85,1.83],I:[8.80,8.65,8.50,8.39,8.27],U:[7.32,7.19,7.09,7.00,6.91]},
+ jetb:{L:[1.85,1.82,1.79,1.77,1.74],I:[8.38,8.24,8.11,8.01,7.92],U:[6.99,6.88,6.78,6.68,6.60]},
+ avgas:{L:[1.69,1.65,1.62,1.59,1.56],I:[7.68,7.50,7.33,7.20,7.07],U:[6.41,6.26,6.12,6.01,5.90]}
+};
+const L_PER_USG=3.785411784, L_PER_IG=4.54609;
+const DEF={cMain:1225,cMainU:"lb",cAux:79,cAuxU:"USG"};
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value);return isNaN(v)?0:v};
+const f0=n=>Math.round(n).toLocaleString();
+const f2=n=>n.toFixed(2);
+
+function interp(arr,t){
+  if(t<=T[0])return arr[0];
+  if(t>=T[T.length-1])return arr[arr.length-1];
+  for(let i=0;i<T.length-1;i++){if(t>=T[i]&&t<=T[i+1]){const k=(t-T[i])/(T[i+1]-T[i]);return arr[i]+k*(arr[i+1]-arr[i]);}}
+}
+function interpWork(arr,t,unit){
+  if(t<=T[0])return `${t}°C is at or below −40°C, so use the −40°C value: <b>${arr[0].toFixed(2)} ${unit}</b>`;
+  if(t>=T[T.length-1])return `${t}°C is at or above 30°C, so use the 30°C value: <b>${arr[arr.length-1].toFixed(2)} ${unit}</b>`;
+  const ex=T.indexOf(t);
+  if(ex>=0)return `${t}°C is a table value: <b>${arr[ex].toFixed(2)} ${unit}</b>`;
+  for(let i=0;i<T.length-1;i++){if(t>=T[i]&&t<=T[i+1]){
+    const k=(t-T[i])/(T[i+1]-T[i]),r=arr[i]+k*(arr[i+1]-arr[i]);
+    if(t===T[i])return `${t}°C is a table value: <b>${arr[i].toFixed(2)} ${unit}</b>`;
+    return `${t}°C sits between ${T[i]}°C (${arr[i].toFixed(2)}) and ${T[i+1]}°C (${arr[i+1].toFixed(2)}).<br>`+
+      `Fraction of the way = (${t} − ${T[i]}) ÷ (${T[i+1]} − ${T[i]}) = ${k.toFixed(3)}<br>`+
+      `Density = ${arr[i].toFixed(2)} + ${k.toFixed(3)} × (${arr[i+1].toFixed(2)} − ${arr[i].toFixed(2)}) = <b>${r.toFixed(3)} ${unit}</b>`;
+  }}
+}
+function density(){
+  const fuel=$("fuel").value,t=num("temp"),o=parseFloat($("ovr").value);
+  if(!isNaN(o)&&o>0)return{L:o,U:o*L_PER_USG,I:o*L_PER_IG,ovr:true,t,work:
+    `Using your CBA density: <b>${o} lb/L</b><br>lb/US gal = ${o} × 3.7854 = ${(o*L_PER_USG).toFixed(3)}<br>lb/Imp gal = ${o} × 4.5461 = ${(o*L_PER_IG).toFixed(3)}`};
+  const d=D[fuel];
+  return{L:interp(d.L,t),U:interp(d.U,t),I:interp(d.I,t),ovr:false,t,work:
+    `<b>Step 1. Density</b> (${$("fuel").selectedOptions[0].text}, CFS table, lb/L row)<br>`+interpWork(d.L,t,"lb/L")+
+    `<br><span class="mut">Same method gives ${interp(d.U,t).toFixed(3)} lb/US gal and ${interp(d.I,t).toFixed(3)} lb/Imp gal from their rows.</span>`};
+}
+function workBox(id,html){$(id).innerHTML=html;}
+function roundUp(l){const r=+$("rnd").value;return l<=0?0:Math.ceil(l/r)*r;}
+function toLb(v,u,d){return u==="lb"?v:u==="USG"?v*d.U:v*d.L;}
+function msg(el,list){$(el).innerHTML=list.map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join("");}
+
+function save(){try{const s={};["fuel","temp","rnd","cMain","cMainU","cAux","cAuxU"].forEach(k=>s[k]=$(k).value);localStorage.setItem("fuelcalc",JSON.stringify(s));}catch(e){}}
+function load(){
+  let s={};try{s=JSON.parse(localStorage.getItem("fuelcalc")||"{}")||{};}catch(e){}
+  $("cMain").value=s.cMain??DEF.cMain;$("cMainU").value=s.cMainU??DEF.cMainU;
+  $("cAux").value=s.cAux??DEF.cAux;$("cAuxU").value=s.cAuxU??DEF.cAuxU;
+  if(s.fuel)$("fuel").value=s.fuel; if(s.temp!==undefined)$("temp").value=s.temp; if(s.rnd)$("rnd").value=s.rnd;
+}
+
+function calc(){
+  const d=density();
+  $("dL").textContent=f2(d.L);$("dU").textContent=f2(d.U);$("dI").textContent=f2(d.I);
+  const dm=[];
+  if(d.ovr)dm.push(["i","Using CBA density override."]);
+  else if(d.t<-40||d.t>30)dm.push(["w","Temperature is outside the CFS table (−40 to 30°C). Using the nearest table value."]);
+  msg("denMsg",dm);
+
+  // King Air
+  const capM=toLb(num("cMain"),$("cMainU").value,d), capA=toLb(num("cAux"),$("cAuxU").value,d);
+  $("capM").textContent=f0(capM*2)+" lb ("+f0(capM)+" per side)";
+  $("capA").textContent=f0(capA*2)+" lb ("+f0(capA)+" per side)";
+  $("capF").textContent=f0((capM+capA)*2)+" lb";
+  const cur={lm:num("lm"),rm:num("rm"),la:num("la"),ra:num("ra")};
+  const curTot=cur.lm+cur.rm+cur.la+cur.ra;
+  const tgtRaw=$("ktgt").value.trim();
+  const km=[];
+  if(tgtRaw===""){
+    $("kTotL").innerHTML='<small>Enter fuel wanted</small>';$("kLeftL").textContent="–";$("kRightL").textContent="–";$("kTable").innerHTML="";
+    workBox("kWork",d.work+"<br><br>Enter the fuel wanted to see the rest.");
+  } else {
+    let tgt=parseFloat(tgtRaw)||0;
+    const full=(capM+capA)*2;
+    if(tgt>full+0.5){km.push(["b",`Requested ${f0(tgt)} lb is more than full fuel (${f0(full)} lb). Capped at full.`]);tgt=full;}
+    const tM=Math.min(tgt,capM*2)/2, tA=Math.max(0,tgt-capM*2)/2;
+    const rows=[["L main","lm",tM,capM],["R main","rm",tM,capM],["L aux","la",tA,capA],["R aux","ra",tA,capA]];
+    let html="",addL={},totLb=0,steps="";
+    rows.forEach(([n,k,t,c])=>{
+      let tt=t;
+      if(cur[k]>c+0.5)km.push(["w",`${n} reads ${f0(cur[k])} lb, above its ${f0(c)} lb capacity. Check the entry or the capacity setting.`]);
+      if(cur[k]>tt+0.5){km.push(["w",`${n} already has ${f0(cur[k])} lb, more than its ${f0(tt)} lb target. Nothing added there.`]);tt=cur[k];}
+      const add=Math.max(0,tt-cur[k]);totLb+=add;
+      const raw=add/d.L,l=roundUp(raw);addL[k]=l;
+      html+=`<tr><td>${n}</td><td>${f0(cur[k])}</td><td>${f0(tt)}</td><td>${f0(add)}</td><td class="l">${l?f0(l):"–"}</td></tr>`;
+      steps+=`${n}: ${f0(tt)} − ${f0(cur[k])} = ${f0(add)} lb ÷ ${d.L.toFixed(3)} = ${raw.toFixed(1)} L → <b>${f0(l)} L</b><br>`;
+    });
+    $("kTable").innerHTML=html;
+    const left=addL.lm+addL.la,right=addL.rm+addL.ra,tot=left+right;
+    const cMu=$("cMainU").value,cAu=$("cAuxU").value;
+    const capTxt=(v,u,lb)=>u==="lb"?`${f0(v)} lb`:`${v} ${u} × ${(u==="USG"?d.U:d.L).toFixed(3)} = ${f0(lb)} lb`;
+    workBox("kWork",d.work+
+      `<br><br><b>Step 2. Tank capacities (per side)</b><br>Mains: ${capTxt(num("cMain"),cMu,capM)}<br>Aux: ${capTxt(num("cAux"),cAu,capA)}`+
+      `<br><br><b>Step 3. Split the ${f0(tgt)} lb</b><br>Mains get up to ${f0(capM*2)} lb: min(${f0(tgt)}, ${f0(capM*2)}) ÷ 2 = <b>${f0(tM)} lb per main</b><br>`+
+      (tA>0?`Aux get the rest: (${f0(tgt)} − ${f0(capM*2)}) ÷ 2 = <b>${f0(tA)} lb per aux</b>`:`Target is within the mains, so <b>0 lb per aux</b>`)+
+      `<br><br><b>Step 4. Pounds to add, then litres</b> (target − now, ÷ lb/L, rounded up to ${$("rnd").value} L)<br>`+steps+
+      `<br><b>Step 5. Per wing</b><br>Left: ${f0(addL.lm)} + ${f0(addL.la)} = <b>${f0(left)} L</b><br>Right: ${f0(addL.rm)} + ${f0(addL.ra)} = <b>${f0(right)} L</b><br>Total: <b>${f0(tot)} L</b>`);
+    $("kTotL").innerHTML=`${f0(tot)} L <small>total · ${f0(totLb)} lb</small>`;
+    $("kLeftL").textContent=f0(left);$("kRightL").textContent=f0(right);
+    if(tgt<curTot-0.5)km.push(["b",`Already ${f0(curTot)} lb on board, more than the ${f0(tgt)} lb wanted. Defuel needed or revise the plan.`]);
+    if((cur.la>0||cur.ra>0)&&tA===0)km.push(["w","Fuel showing in aux but the plan doesn't fill the mains. Check the aux gauge and the fill sequence."]);
+    if(Math.abs(cur.lm-cur.rm)>0.5||Math.abs(cur.la-cur.ra)>0.5)km.push(["i","Current fuel is uneven L/R, so per-wing litres differ to bring both sides level."]);
+    if(tA>0&&addL.la+addL.ra>0)km.push(["i","Have the fueler top the mains first, then add the aux quantities."]);
+  }
+  msg("kMsg",km);
+
+  // General
+  const gm=[];const gT=$("gTgt").value.trim();
+  if(gT===""){$("gL").innerHTML='<small>Enter fuel wanted</small>';["gLb","gU","gI"].forEach(i=>$(i).textContent="–");workBox("gWork",d.work+"<br><br>Enter the fuel wanted to see the rest.");}
+  else{
+    const tg=parseFloat(gT)||0,add=tg-num("gNow");
+    if(add<0){gm.push(["b","Fuel on board is already above the amount wanted."]);}
+    const a=Math.max(0,add),raw=a/d.L,l=roundUp(raw);
+    $("gL").innerHTML=`${f0(l)} L <small>to add</small>`;
+    $("gLb").textContent=f0(a)+" lb";$("gU").textContent=(a/d.U).toFixed(1);$("gI").textContent=(a/d.I).toFixed(1);
+    workBox("gWork",d.work+
+      `<br><br><b>Step 2. Pounds to add</b><br>${f0(tg)} − ${f0(num("gNow"))} = <b>${f0(a)} lb</b>`+
+      `<br><br><b>Step 3. Convert</b><br>Litres: ${f0(a)} ÷ ${d.L.toFixed(3)} = ${raw.toFixed(1)} L → rounded up to ${$("rnd").value} L = <b>${f0(l)} L</b><br>`+
+      `US gal: ${f0(a)} ÷ ${d.U.toFixed(3)} = ${(a/d.U).toFixed(1)}<br>Imp gal: ${f0(a)} ÷ ${d.I.toFixed(3)} = ${(a/d.I).toFixed(1)}`);
+  }
+  msg("gMsg",gm);
+  const rl=parseFloat($("rL").value);$("rLb").textContent=isNaN(rl)?"–":f0(rl*d.L)+" lb";
+  save();
+}
+
+document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",calc));
+$("bMains").onclick=()=>{const d=density();const capM=toLb(num("cMain"),$("cMainU").value,d);const aux=num("la")+num("ra");$("ktgt").value=Math.round(capM*2+aux);calc();};
+$("bFull").onclick=()=>{const d=density();$("ktgt").value=Math.round((toLb(num("cMain"),$("cMainU").value,d)+toLb(num("cAux"),$("cAuxU").value,d))*2);calc();};
+$("bNeg").onclick=()=>{const v=$("temp").value.trim();$("temp").value=v===""?"-":(v.startsWith("-")?v.slice(1):"-"+v);calc();};
+$("bReset").onclick=()=>{$("cMain").value=DEF.cMain;$("cMainU").value=DEF.cMainU;$("cAux").value=DEF.cAux;$("cAuxU").value=DEF.cAuxU;calc();};
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));
+  $("t-ka").classList.toggle("hide",b.dataset.t!=="ka");$("t-gen").classList.toggle("hide",b.dataset.t!=="gen");
+});
+load();calc();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}
+</script>
+</body>
+</html>
