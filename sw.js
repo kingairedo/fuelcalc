@@ -1,5 +1,5 @@
 // Bump the version whenever you change index.html so phones pick up the update.
-const CACHE = "fuelcalc-v1";
+const CACHE = "fuelcalc-v2";
 const FILES = ["./", "index.html", "manifest.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
